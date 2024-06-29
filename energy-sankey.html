@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sankey Diagram</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://unpkg.com/d3-array@1"></script>
+  <script src="https://unpkg.com/d3-collection@1"></script>
+  <script src="https://unpkg.com/d3-path@1"></script>
+  <script src="https://unpkg.com/d3-shape@1"></script>
+  <script src="https://unpkg.com/d3-sankey@0"></script>
+  <style>
+     .link {
+      fill: none;
+      stroke: #000;
+      stroke-opacity: 0.2;
+    }
+
+    .link:hover {
+      stroke-opacity: 0.5;
+    }
+
+    .node rect {
+      fill-opacity: 0.9;
+      shape-rendering: crispEdges;
+    }
+
+    .node text {
+      pointer-events: none;
+      text-shadow: 0 1px 0 #fff;
+    }
+  </style>
+  </head>
+  <body>
+  <svg width="500" height="500"></svg>
+  <script>
+    async function drawSankey() {
+      const rawGenerationData = await d3.csv("data/2023-Totalgeneration-csv.csv");
+      const generationData = rawGenerationData[rawGenerationData.length - 1];
+
+      const rawConsumptionData = await d3.csv("data/sales-history-csv.csv");
+      const consumptionData = rawConsumptionData[rawConsumptionData.length - 1];
+
+      const generationNames = Object.keys(generationData)
+        .filter((key) => ["*Others", "In", "Out", "Year", "Total"].includes(key) ? false : true)
+
+      const consumptionNames = Object.keys(consumptionData)
+        .filter((key) => ["Year", ""].includes(key) ? false : true)
+
+      const nodeNames = generationNames.concat(consumptionNames)
+      const nodes = nodeNames
+        .map((item, index) => {
+          return({
+            node: index, name: item
+          })
+        })
+
+
+      const links = []
+      generationNames.forEach((source, index) => {
+        if (index !== 7) {
+          links.push({
+            source: 7,
+            target: index,
+            value: generationData[`${source}`]
+          })
+        }
+      })
+      consumptionNames.forEach((consumer, index) => {
+        if (index + 8 !== 12) {
+          links.push({
+            source: 12,
+            target: index + 8,
+            value: consumptionData[`${consumer}`]
+        })
+        }
+      })
+
+      console.log(links)
+      const svg = d3.select("svg")
+      const colorScale = d3.scaleSequential()
+        .domain([0, 13])
+        .interpolator(d3.interpolateRainbow)
+
+      // sankey generator
+      const sankeyGen = d3.sankey()
+        .nodeWidth(36)
+        .nodePadding(10)
+        .extent([[10, 10], [490, 490]])
+
+      const graph = {
+        nodes: nodes,
+        links: links
+      }
+      // const { nodes, links } = sankeyGen(graph)
+      const linkGen = d3.sankeyLinkHorizontal()
+      const linkGroup = svg
+        .append('g')
+
+      linkGroup
+        .selectAll('path')
+        .data(links)
+        .enter()
+        .append('path')
+        .attr('class', 'link')
+        .attr('d', linkGen)
+        .attr('fill', 'none')
+        .attr('stroke', (d, i) => colorScale(i))
+        .attr('stroke-width', d => d.width)
+        .attr('opacity', 0.5)
+
+      const nodeGroup = svg
+        .append("g")
+
+
+      nodeGroup
+        .selectAll("rect")
+        .data(nodes)
+        .enter()
+        .append('rect')
+        .attr('class', 'node')
+        .attr('height', d => d.y1 - d.y0)
+        .attr('width', sankeyGen.nodeWidth())
+        .attr('x', d => d.x0)
+        .attr('y', d => d.y0)
+        .attr('fill', 'black')
+        .attr('opacity', 0.5)
+
+      svg
+        .append('g')
+        .selectAll('text')
+        .data(nodes)
+        .enter()
+        .append('text')
+        .text(d => d.name)
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'black')
+        .attr('font-size', '1rem')
+        .attr('font-family', 'Helvetica')
+        .attr('transform', d => `rotate(90, ${d.x0}, ${((d.y1 - d.y0) / 2) + d.y0})`)
+        .attr('x', d => d.x0)
+        .attr('y', d => ((d.y1 - d.y0) / 2) + d.y0 -13)
+    }
+
+    drawSankey();
+  </script>
+</body>
+</html>
