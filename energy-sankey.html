@@ -11,29 +11,10 @@
   <script src="https://unpkg.com/d3-shape@1"></script>
   <script src="https://unpkg.com/d3-sankey@0"></script>
   <style>
-     .link {
-      fill: none;
-      stroke: #000;
-      stroke-opacity: 0.2;
-    }
-
-    .link:hover {
-      stroke-opacity: 0.5;
-    }
-
-    .node rect {
-      fill-opacity: 0.9;
-      shape-rendering: crispEdges;
-    }
-
-    .node text {
-      pointer-events: none;
-      text-shadow: 0 1px 0 #fff;
-    }
   </style>
   </head>
   <body>
-  <svg width="1200" height="500"></svg>
+  <svg width="1200" height="1200"></svg>
   <script>
     async function drawSankey() {
       const rawGenerationData = await d3.csv("data/2023-Totalgeneration-csv.csv");
@@ -48,6 +29,7 @@
       const consumptionNames = Object.keys(consumptionData)
         .filter((key) => ["Year", ""].includes(key) ? false : true)
 
+      consumptionNames.reverse()
       const nodeNames = generationNames.concat(consumptionNames)
       const nodeData = nodeNames
         .map((item, index) => {
@@ -57,44 +39,42 @@
         })
 
 
-      // const linkData = [
-      //   { source: 7, target: 0, value: 549, name: 'node 0 to 1' },
-      //   { source: 0, target: 2, value: 342, name: 'node 0 to 2' },
-      //   { source: 1, target: 3, value: 2, name: 'node 1 to 3' },
-      //   { source: 1, target: 4, value: 1, name: 'node 1 to 4' },
-      //   { source: 2, target: 4, value: 1, name: 'node 2 to 4' }
-      // ]
+
       const linkData = []
       generationNames.forEach((source, index) => {
-        if (index !== 7) {
+        if (![2, 3, 4, 5, 7].includes(index)) {
           linkData.push({
-            "source": 7,
-            "target": index,
-            "value": parseFloat(generationData[`${source}`])
+            "source": index,
+            "target": 7,
+            "value": parseInt(generationData[`${source}`].replace(/,/g, ''))
+          })
+        }
+        if ([2, 3, 4, 5].includes(index)) {
+          linkData.push({
+            "source": index,
+            "target": 6,
+            "value": parseInt(generationData[`${source}`].replace(/,/g, ''))
           })
         }
       })
       consumptionNames.forEach((consumer, index) => {
         if (index + 8 !== 12) {
           linkData.push({
-            "source": 12,
-            "target": index + 8,
-            "value": parseFloat(consumptionData[`${consumer}`])
-        })
+          "source": 7,
+          "target": index + 8,
+          "value": parseInt(consumptionData[`${consumer}`].replace(/,/g, ''))
+          })
         }
       })
 
-      console.log(linkData)
       const svg = d3.select("svg")
-      const colorScale = d3.scaleSequential()
-        .domain([0, 13])
-        .interpolator(d3.interpolateRainbow)
+      const colorScale = d3.scaleSequential([0, 100], d3.interpolateRainbow);
 
       // sankey generator
       const sankeyGen = d3.sankey()
         .nodeWidth(36)
-        .nodePadding(10)
-        .extent([[10, 10], [1190, 490]])
+        .nodePadding(50)
+        .extent([[10, 10], [1050, 1190]])
 
       const graph = {
         nodes: nodeData,
@@ -141,12 +121,10 @@
         .data(nodes)
         .enter()
         .append('text')
-        .text(d => d.name)
-        .attr('text-anchor', 'middle')
+        .text(d => `${d.name} ${d.value} GWh`)
         .attr('fill', 'black')
         .attr('font-size', '1rem')
         .attr('font-family', 'Helvetica')
-        .attr('transform', d => `rotate(90, ${d.x0}, ${((d.y1 - d.y0) / 2) + d.y0})`)
         .attr('x', d => d.x0)
         .attr('y', d => ((d.y1 - d.y0) / 2) + d.y0 -13)
     }
