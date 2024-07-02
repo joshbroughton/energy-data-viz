@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <title>Using Paths</title>
+  <style>
+    /* Put the box in the center of the page */
+    body, html {
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #svg {
+      border: 1px solid;
+    }
+  </style>
+  </head>
+  <body>
+
+  <svg id="svg" width="1600" height="440"></svg>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script>
+    function makeLine(resource, data, graph) {
+      const dateExtent = d3.extent(data, d => d.Year)
+
+      const xScale = d3.scaleLinear()
+        .domain(dateExtent)
+        .range([40, 1500])
+
+      const yScale = d3.scaleLinear()
+        .domain([0, 70000])
+        .range([390, 10])
+
+      const linegen = d3.line() // create a line generator
+        .x((d, i) => xScale(d.Year)) // map the x to the index
+        .y(d => yScale(d[`${resource}`])) // map y to percipitation
+        .curve(d3.curveLinear)
+
+      const colorScale = d3.scaleOrdinal(["Coal", "Natural Gas", "All Renewables"], ["red", "blue", "green"])
+      graph
+        .append('path') // append a path
+        .attr('d', linegen(data)) // generate a line
+        .attr('stroke-width', 2)
+        .attr('stroke', colorScale(resource))
+        .attr('fill', 'none')
+
+      graph
+        .append('text')
+        .text(resource)
+        .attr('y', yScale(data[15][`${resource}`]) - 20)
+        .attr('x', xScale(2000))
+    }
+
+    async function scatterPlot() {
+      let data = await d3.csv("data/2023-Totalgeneration-csv.csv");
+      data = data.map((year) => {
+        Object.keys(year).forEach((key) => {
+          year[`${key}`] = parseInt(year[`${key}`].replace(/,/g, ''))
+        })
+        return year;
+      })
+      const dateExtent = d3.extent(data, d => d.Year)
+      const xScale = d3.scaleLinear()
+        .domain(dateExtent)
+        .range([0, 1500])
+
+      const generationExtent = d3.extent(data, d => (d["Nautral Gas"]))
+      const yScale = d3.scaleLinear()
+        .domain([0, 70000])
+        .range([390, 10])
+
+      const svg = d3
+        .select('#svg')
+
+      const graph = svg
+        .append('g')
+
+      Object.keys(data[0]).forEach((key) => {
+        if (["Coal", "Natural Gas", "All Renewables"].includes(key)) {
+          makeLine(key, data, graph)
+        }
+      })
+
+      const bottomAxis = d3.axisBottom(xScale).ticks(20).tickFormat(d3.format("d"));
+
+      const leftAxis = d3.axisLeft(yScale)
+
+      const bottomAxisGroup = svg
+        .append('g')
+        .attr('transform', `translate(40, 390)`)
+        .call(bottomAxis)
+
+      bottomAxisGroup.append("text")
+        .attr("x", 1400 / 2)
+        .attr("y", 45)
+        .attr("fill", "black")
+        .style("text-anchor", "middle")
+        .text("Year")
+        .style("font-size", "20px")
+
+
+      const yAxisGroup = svg
+        .append('g')
+        .attr('transform', `translate(40, 0)`)
+        .call(leftAxis)
+
+      yAxisGroup.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -150)
+        .attr("y", 10)
+        .attr("dy", "1em")
+        .attr("fill", "black")
+        .style("text-anchor", "middle")
+        .style("font-size", "16px")
+        .text("Generation (GWh)")
+    }
+    scatterPlot()
+  </script>
+  </body>
+</html>
