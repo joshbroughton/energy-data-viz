@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <title>Anime List Chart</title>
+  <style>
+    body, html {
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    #svg {
+      border: 1px solid;
+    }
+  </style>
+  </head>
+  <body>
+    <h1>Popularity/Rating Mismatch of Top 50 Most Popular Anime on MAL</h1>
+    <svg id="svg" width="1800" height="1000"></svg>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script>
+    async function renderChart() {
+      const rawData = await d3.csv('data/mal_top2000_anime.csv')
+      const mostPopularAnime = rawData
+        .filter((anime) => parseInt(anime["Popularity Rank"]) <= 50)
+        .sort((a, b) => parseInt(a["Popularity Rank"] - parseInt(b["Popularity Rank"])))
+
+      mostPopularAnime.forEach((anime) => {
+          anime["mismatch"] = parseInt(anime["Score Rank"]) - parseInt(anime["Popularity Rank"])
+        })
+
+      const maxAbsValue = d3.max(mostPopularAnime.map(d => Math.abs(d.mismatch)));
+      const normalizedData = mostPopularAnime.forEach(d => d.mismatch = d.mismatch / maxAbsValue);
+
+      console.log(mostPopularAnime)
+      const margin = { top: 100, right: 50, bottom: 0, left: 200 }
+      const width = 1600 - (margin.left + margin.right)
+      const height = 1000 - (margin.top + margin.bottom)
+
+      const xScale = d3.scaleBand()
+        .domain(mostPopularAnime.map(d => d.Name))
+        .range([margin.left, width + margin.left])
+        .padding(0.5) // space between bars
+
+      const yScale = d3.scaleSqrt()
+        .domain([-1, 1])
+        .range([height, margin.top])
+
+      const svg = d3.select('#svg')
+
+      svg.selectAll(".bar")
+        .data(mostPopularAnime)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", (d, i) => xScale(d.Name))
+        .attr("y", d => d.mismatch >= 0 ? yScale(d.mismatch) : yScale(0))
+        .attr("height", d => (Math.abs(yScale(d.mismatch) - yScale(0))))
+        .attr("width", xScale.bandwidth())
+        .attr("fill", d => d.mismatch >= 0 ? "steelblue" : "orange")
+
+      svg.append("g")
+        .attr("class", "x-axis")
+        .attr("transform", `translate(0, ${yScale(0)})`) // Position at the bottom
+        .call(d3.axisBottom(xScale))
+        .selectAll("text")
+        .style("text-anchor", "end")
+        .attr("dx", "-0.8em")
+        .attr("dy", "-0.5em")
+        .attr("transform", "rotate(-45)")
+        .style("font-size", "14px")
+    }
+    renderChart()
+  </script>
+  </body>
+</html>

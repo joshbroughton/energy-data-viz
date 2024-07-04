@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
   <head>
-  <title>Using Paths</title>
+  <title>Electricy Generation</title>
   <style>
-    /* Put the box in the center of the page */
     body, html {
       height: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
     }
 
     #svg {
@@ -17,9 +17,8 @@
   </style>
   </head>
   <body>
-
-  <svg id="svg" width="1600" height="440"></svg>
-
+    <h1>Electricity Generation in Alberta by Resource Type Over Time</h1>
+    <svg id="svg" width="1600" height="440"></svg>
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <script>
     function makeLine(resource, data, graph) {

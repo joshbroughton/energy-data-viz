@@ -16,15 +16,13 @@
       display: flex;
       justify-content: center;
       align-items: center;
-    }
-
-    #svg {
-      border: 1px solid;
+      flex-direction: column;
     }
   </style>
   </head>
   <body>
-  <svg width="1200" height="1200"></svg>
+    <h1>Electricity Generation by Source and Consumption by Sector in Alberta in 2023</h1>
+    <svg id="svg" width="1200" height="1000"></svg>
   <script>
     async function drawSankey() {
       const rawGenerationData = await d3.csv("data/2023-Totalgeneration-csv.csv");
@@ -84,7 +82,7 @@
       const sankeyGen = d3.sankey()
         .nodeWidth(36)
         .nodePadding(50)
-        .extent([[10, 10], [1050, 1190]])
+        .extent([[10, 10], [1050, 990]])
 
       const graph = {
         nodes: nodeData,
